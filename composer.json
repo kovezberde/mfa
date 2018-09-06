@@ -1,0 +1,7 @@
+{
+  "name": "drupal/eere_mfa",
+  "description": "MFA integration with EERE environment.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev"
+}
