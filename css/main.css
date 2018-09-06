@@ -1,0 +1,50 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Apr 16, 2018, 2:37:16 PM
+    Author     : priv.Kerem.Ovezberde
+*/
+
+
+/*
+* MFA Token
+*/
+.sms-auth > label, app-auth > lable {
+    margin-left: 20px;
+}
+#eere-mfa-token-form label {
+display: unset !important;
+}
+ /*For IE */
+ @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+#eere-mfa-token-form label {
+display: inline;
+}
+}
+#edit-token {
+    display: inherit;
+    width: 15%;
+    margin-bottom: 20px;
+}
+#edit-radio-buttons-app, #edit-password {
+    margin-bottom: 20px;
+}
+
+#eere-mfa-token-form #edit-submit-button, #eere-mfa-token-form #edit-cancel-button {
+    margin-bottom: 30px;
+}
+#edit-cancel-button {
+    margin-left:10px;
+}
+#eere-mfa-token-form .form-type-radios {
+    border-top: 1px solid #eee;
+}
+#eere-mfa-form #edit-username, #eere-mfa-form #edit-password {
+    width: 25%;
+}
+.form-type-password {
+    margin-left: 0px !important;
+}

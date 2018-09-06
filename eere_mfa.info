@@ -1,0 +1,8 @@
+name = EERE MFA
+description = 'EERE Multifactor Authentication Web Service'
+core = 7.x
+files[] = eere_mfa.module
+files[] = eere_mfa.inc
+scripts[] = js/main.js
+stylesheets[all][] = css/main.css
+
