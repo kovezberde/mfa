@@ -1,432 +1,184 @@
 <?php
- drupal_session_start();
 
-/*
- * DBNAME GLOBALS
- */
-function dbname() { 
-     return variable_get('DBNAME', NULL);
-}
+class WsseAuthHeader extends SoapHeader {
 
+    private $wss_ns = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd';
 
-function eere_mfa_menu() {
-  $items = array();
-  $items['mfa/login'] = array(
-    'title' => 'MFA Login',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('eere_mfa_form'),
-    'access callback' => TRUE, 
-    'file' => 'eere_mfa.inc',                                                                                                                                                                                                                
-    'file path' => drupal_get_path('module', 'eere_mfa'),                                                                                                                                                                                    
-  );                                                                                                                                                                                                                                         
-    $items['mfa/login/%'] = array(                                                                                                                                                                                                           
-    'title' => 'MFA Login',                                                                                                                                                                                                                  
-    'page callback' => 'drupal_get_form',                                                                                                                                                                                                    
-    'page arguments' => array('eere_mfa_token_form'),                                                                                                                                                                                        
-    'access callback' => TRUE,                                                                                                                                                                                                               
-    'access arguments' => array('access content'),                                                                                                                                                                                           
-    'file' => 'eere_mfa.inc',                                                                                                                                                                                                                
-    'file path' => drupal_get_path('module', 'eere_mfa'),                                                                                                                                                                                    
-  );                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                             
-  return $items;                                                                                                                                                                                                                             
-}                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                             
-function eere_mfa_form($form, &$form_state) {                                                                                                                                                                                                
-                                                                                                                                                                                                                                             
- $form['text'] = array (                                                                                                                                                                                                                     
-  '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%;">'                                                                                                                               
-     . '<br /><b>ATTENTION:</b> Starting 4/21/2018, this application users will be required to use Multi-Factor Authentication (MFA) to access this web application. '                                                                       
-     . ' Upon your first login, you will be redirected to a MFA setup/registration page where you will complete the process. '                                                                                                               
-     . '<br />After a successful token setup, you will be redirected back to login page and you will be able to use your MFA method on the next screen. '                                                                                    
-     . '<br />If you are having issues please contact the <a href="mailto:DL-EEREActioNetWebTeam@ee.doe.gov">administrator</a>.</div><br />',
- );
+    function __construct($user, $pass, $ns = null) {
+        if ($ns) {
+            $this->wss_ns = $ns;
+        }
 
-    
- $form['username'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Username:',
-    '#size' => 20,
-    '#maxlength' => 60,
-    '#required' => TRUE,
-  );
- $form['password'] = array(
-    '#type' => 'password',
-    '#title' => 'Password:',
-    '#size' => 20,
-    '#maxlength' => 60,
-    '#required' => TRUE,
-  );
-  $form['submit_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Login'),
-    '#submit' => array('check_if_drupal_user_exists'),  
-  );
-  
-  $form['reset_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Reset Token Setup'),
-    '#submit' => array('reset_token_setup'),   
-  );
+        $auth = new stdClass();
+        $auth->Username = new SoapVar($user, XSD_STRING, NULL, $this->wss_ns, NULL, $this->wss_ns);
+        $auth->Password = new SoapVar($pass, XSD_STRING, NULL, $this->wss_ns, NULL, $this->wss_ns);
 
-    $form['link'] = array (
-      '#markup' => '<div><br />If you would like to reset your MFA configuration, please enter your username and password and click this '
-        . '<a href="#" class="reset" title="Reset Token"><b>Reset Token Setup </b></a>link.</div>',
-  );
-  $form['reset'] = array (
-      '#markup' => '<div>Click<a href="'.$base_url . base_path().'user/password" class="login-password" title="Get a new password"><b> Forgot Password </b></a>to recover/reset your password.</div>',
-  );
-  return $form;
-}
+        $username_token = new stdClass();
+        $username_token->UsernameToken = new SoapVar($auth, SOAP_ENC_OBJECT, NULL, $this->wss_ns, 'UsernameToken', $this->wss_ns);
 
-function eere_mfa_token_form($form, &$form_state) {
-  $form['text'] = array(
-   '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%">'
-      . 'This is a Department of Energy (DOE) computer system. DOE computer systems are provided for the processing of official U.S. government information only. '
-      . 'All data contained within DOE computer systems is owned by the DOE, and may be audited, intercepted, recorded, read, copied, or captured in any manner '
-      . 'and disclosed in any manner, by authorized personnel. THERE IS NO RIGHT OF PRIVACY IN THIS SYSTEM. '
-      . 'System personnel may disclose any potential evidence of crime found on DOE computer systems to appropriate authorities. '
-      . 'USE OF THIS SYSTEM BY ANY USER, AUTHORIZED OR UNAUTHORIZED, CONSTITUTES CONSENT TO THIS AUDITING, INTERCEPTION, RECORDING, READING, COPYING, CAPTURING, '
-      . 'and DISCLOSURE OF COMPUTER ACTIVITY.</div><br />',  
-  );  
-    
- $form['token'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Token:',
-    '#size' => 20,
-    '#maxlength' => 20,
-    //'#required' => TRUE,
-  );
- 
-  $form['submit_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Validate Token'),
-    '#submit' => array('eere_mfa_validate_token'),  
-  );
- 
-   $form['cancel_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Cancel'),
-    '#submit' => array('eere_mfa_cancel'),  
-  );
-  
-# the options to display in our form radio buttons
-  $options = array(
-  'email_auth' => t('Email'),
-  'sms' => t('SMS'), 
-  'app' => t('Google/Microsoft app'),
-);
-
-$form['radio_buttons'] = array(
-  '#type' => 'radios',
-  '#title' => t('Authentication Method:'),
-  '#options' => $options,
-  // '#required' => TRUE, 
-);
-
-   $form['request_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Request Token'),
-    '#submit' => array('eere_mfa_token_form_submit'),  
-  );
-
-  return $form;
-}
-
-
-/*
- * Check if user exists in local Drupal users database
- */
-function check_if_drupal_user_exists($form, &$form_state) {
-    $user = $form_state['values']['username'];
-    $password = $form_state['values']['password'];
-    if (user_authenticate($user, $password)) {  
-    $user_obj = user_load_by_name($user);
-     }
-    $uid = $user_obj->uid; 
-    $email = $user_obj->mail; 
-    $_SESSION['nid'] = $uid;
-    $_SESSION['user'] = $user;
-    
-   //Check if user exists in Drupal default users table
-    if ($user_obj) {  
-        check_if_mfa_user_exists($uid, $email, $user); 
-    }
-    else {
-    form_set_error('error', t('The current user or password is invalid'));
+        $security_sv = new SoapVar(
+                new SoapVar($username_token, SOAP_ENC_OBJECT, NULL, $this->wss_ns, 'UsernameToken', $this->wss_ns), SOAP_ENC_OBJECT, NULL, $this->wss_ns, 'Security', $this->wss_ns);
+        parent::__construct($this->wss_ns, 'Security', $security_sv, true);
     }
 }
 
+class MFAAuthentication {
 
-/*
- * Check if user exists in local EERE MFA database
- */
-function check_if_mfa_user_exists($uid, $email, $user) {
-    global $base_root;
-    $dbname = dbname();
-    $return_url = $base_root . request_uri();
-    $request = new MFAAuthentication($uid, $user, $email, $return_url); 
-    $token_setup = $request->validate_soft_token_setup();
-    
-    db_set_active('external');
-    $query = db_query(sprintf("SELECT mail from %s WHERE mail = '%s'", $dbname, $email));
-    $result = $query->fetchObject();   
-    
-    //Check if user exists in MFA users table
-    if ($result->mail == '') {
-     db_insert($dbname)->fields(array(
-    'username' => $user,     
-    'mail' => $email,
-     ))->execute();
-    drupal_goto($request->create_soft_token_setup_url(), array('external' => TRUE));
+  public function __construct($uid=null, $user=null, $email=null, $param=null, $softToken=null) {
+        $arguments = func_get_args();
+        $username = variable_get('username', NUL);
+        $password = variable_get('password', NULL);
+        $wsdl = variable_get('url', NULL);
+        $basic = variable_get('basic_url', NULL);
+        $this->username = $username;
+        $this->password = $password;
+        $this->wsdl = $wsdl;
+        $this->basic = $basic;
+        $this->uid = $uid;
+        $this->email = $email;
+        $this->user = $user;
+        $this->softToken = $softToken;
+        $this->param = $param;
+
+        
+       
+        //Reset Soft Token Setup
+       if (sizeof(func_get_args()) == 1) {    
+        $this->options = array(
+        'appUserId' => $this->uid,
+      );
+       
+      }
+        //Create Soft Token URL
+        if (sizeof(func_get_args()) == 4) {   
+        $this->options = array(
+        'appUserId' => $this->uid,
+        'userName' => $this->user,
+        'email' => $this->email,
+        'defaultSoftTokenTypeId' => '4',
+        'userIPAddress' => $_SERVER["REMOTE_ADDR"],
+        'returnUrl' => $this->param,
+      );
+       
+      }
+     
+     //Request Soft Token 
+     if (sizeof(func_get_args()) == 3) { 
+       $this->options = array (
+        'appUserId' => $this->uid,
+        'email' => $arguments[1],
+        'softToken' =>  $arguments[3], 
+        'softTokenTypeId' => $arguments[2],
+      );
+     }  
+     
+    //Validate Soft Token
+    if (sizeof(func_get_args()) == 5) {
+        $this->options = array (
+        'appUserId' => $this->uid,
+        'softToken' => $arguments[2],
+        'softTokenTypeId' => $arguments[1],
+      );
     }
-    
-    //If registration is not completed
-    if ($token_setup->IsCompleted == 0) {
-        drupal_goto($request->create_soft_token_setup_url(), array('external' => TRUE));
-    }
-    else if ($token_setup->Email != null && $result->mail != '') {  
+ } 
 
-    db_update($dbname)->fields(array(
-    'status' => $token_setup->IsCompleted,
-    'soft_token_types' =>  $token_setup->SoftTokenTypes,    
-    'default_authentication' => $token_setup->DefaultSoftTokenType,
-    'created' => $token_setup->SetupTime,    
-    'updated' => $token_setup->SetupTimeUnixTime,
-        ))
-        ->condition('mail', $email, '=')
-        ->execute();
-    
-    eere_mfa_request_token($user, $email);
-    drupal_goto('mfa/login/'.$token_setup->DefaultSoftTokenType.'/'.$token_setup->SoftTokenTypes.'/'.$user);
-    } 
-    
-    db_set_active();
+   public function _call() {
+       
+        $wsse_header = new WsseAuthHeader($this->username, $this->password);
+        $client = new SoapClient($this->wsdl, array(
+            "trace" => 1,
+            "exceptions" => 1,
+          )
+        );
+        $client->__setLocation($this->basic);
+        $client->__setSoapHeaders(array($wsse_header));
 
+        return $client;
+       
+   } 
+   
+function create_soft_token_setup_url() {
+
+       $client = $this->_call();
+       
+        try {
+        $results = $client->CreateSoftTokenSetupUrl($this->options);
+        }
+        
+        catch (SoapFault $e ){
+         form_set_error('error', t('Error'.$e.$client->__getLastRequest()));
+        
+        }
+
+        return $results->CreateSoftTokenSetupUrlResult;
 
 }
 
 
-/*
- * Request Token
- */
-function eere_mfa_request_token($user, $email) {
-    $dbname = dbname();
-    if ($user) {
-    db_set_active('default'); 
-    $user_obj = user_load_by_name($user);
-    $uid = $user_obj->uid;
-    $email = $user_obj->mail;
+ function request_soft_token() {
+       
+       $client = $this->_call();
+       
+       try {
+        $results = $client->RequestSoftToken($this->options);
+
+        }
+        catch (SoapFault $e ){
+         form_set_error('error', t('Error'.$e.$client->__getLastRequest()));
+        
+        }
+        return $results->RequestSoftTokenResult;
+        //return $this->options;
    }
-    db_set_active('external');
-    $query = db_query(sprintf("SELECT default_authentication from %s WHERE mail = '%s'", $dbname, $email));
-    $result = $query->fetchObject(); 
-    
-    //Defaul Authentificator ID
-    $param = $result->default_authentication;
-    
-     if ($result->default_authentication == 1) {
-    $request = new MFAAuthentication($uid, $email = null, $param);
-    $request->request_soft_token();
-     drupal_set_message(t('Please use Google or Microsoft authenticator to validate token number.'));
-    }
-    
-     if ($result->default_authentication == 2) {
-    $request = new MFAAuthentication($uid, $email = null, $param);
-    $request->request_soft_token();
-     drupal_set_message(t('Your token number has been sent. <br/>Please check your phone to validate token number.'));
-    }
-
-
-    if ($result->default_authentication == 4) {
-    $request = new MFAAuthentication($uid, $email, $param);
-    $request->request_soft_token();
-     drupal_set_message(t('Your token number has been sent. <br/>Please check your email to validate token number.'));
-    }
-    db_set_active();
-}
 
 
 
-function get_username_info($user) {
-  db_set_active('default');  
-   $user = $_SESSION['user'];
-   $user_obj = user_load_by_name($user); 
-   db_set_active();
-  return $user_obj;
-}
+   function validate_soft_token() {
 
-function get_username_info_reset($user) {
-   db_set_active('default'); 
-   $user_obj = user_load_by_name($user);
-   db_set_active();
-  return $user_obj;
-}
+       $client = $this->_call();
+       
+        try {
+        $results = $client->ValidateSoftToken($this->options);
 
-
-
-
-/*
- * Validate Token
- */
-function eere_mfa_validate_token($form, &$form_state) {
-   $softToken = $form_state['values']['token'];
-   $user_obj = get_username_info();
-   $uid = $user_obj->uid;
-   $arg = arg(2);
-    
-    if ($arg == 1) {
-       $request = new MFAAuthentication($uid, $arg, $softToken, null, null);
-    }
-    
-   if ($arg == 2) {
-    
-    $request = new MFAAuthentication($uid, $arg, $softToken, null, null);
-
-    }
-    
-   if ($arg == 4) {
-    
-    $request = new MFAAuthentication($uid, $arg, $softToken, null, null);
-
-    }    
-    $valid = $request->validate_soft_token();
-    if($valid->IsSuccess == true) {       
-      $form_state = array();
-      $form_state['uid'] = $uid;        
-      user_login_submit(array(), $form_state);
-      return true;
-    
-     }
-     else {
-         form_set_error('error', t('Your token number is invalid'));
-     }
-}
-
-
-/*
- * Get user's soft token type
- */
-function _callDB($email) {
-    $dbname = dbname();
-    db_set_active('external');
-    $query = db_query(sprintf("SELECT soft_token_types from %s WHERE mail = '%s'", $dbname, $email));
-    $result = $query->fetchObject();
-    db_set_active();
-    return $result;
-}
-
-/*
- * Request Token Again
- */
-function  eere_mfa_token_form_submit($form, &$form_state) {
-    $user = arg(3);
-    $user_obj = get_username_info($user);
-    $uid = $user_obj->uid;
-    $email = $user_obj->mail;
-    $radio = $form_state['values']['radio_buttons'];
-    $result = _callDB($email);
-
-    if ($radio == 'app') {
-    $param = 1;
-    $request = new MFAAuthentication($uid, $email = null, $param);
-    $request->request_soft_token();
-    drupal_set_message(t('Please use Google or Microsoft authenticator to validate token number.'));
-    drupal_goto('mfa/login/1/'.$result->soft_token_types.'/'.$user_obj->name);
-    }
-    
-    if ($radio == 'sms') {
-    $param = 2;
-    $request = new MFAAuthentication($uid, $email = null, $param);
-    $request->request_soft_token();
-    drupal_set_message(t('Your token number has been sent. <br/>Please check your phone to validate token number.'));
-    drupal_goto('mfa/login/2/'.$result->soft_token_types.'/'.$user_obj->name);
-
-    }
-
-    if ($radio == 'email_auth') {
-    $param = 4;
-    $request = new MFAAuthentication($uid, $email, $param);
-    $request->request_soft_token();
-    drupal_set_message(t('Your token number has been sent. <br/>Please check your email to validate token number.'));
-    drupal_goto('mfa/login/4/'.$result->soft_token_types.'/'.$user_obj->name);
-    }
-}
-
-
-/*
- * Reset Token
- */
-function reset_token_setup($form, &$form_state) {
-    session_destroy();
-    $dbname = dbname();
-    global $base_root;
-    $return_url = $base_root . request_uri();
-    $user = $form_state['values']['username'];
-    $password = $form_state['values']['password'];
-    
-    if (user_authenticate($user, $password)) { 
-     $user_obj = get_username_info_reset($user);   
-     $uid = $user_obj->uid;
-     $email = $user_obj->mail;
- 
-     $request = new MFAAuthentication($uid, $user, $email,  $return_url);
-     $token_setup = $request->validate_soft_token();
- 
-     db_set_active('external');
-    $query = db_query(sprintf("SELECT mail from %s WHERE mail = '%s'", $dbname, $email));
-    $result = $query->fetchObject();   
-    
-    //Check if user exists in MFA users table
-    if($token_setup->IsCompleted == false && $result->mail != '') {
-         
-      db_update($dbname)->fields(array(
-     //'status' => $token_setup->IsCompleted,
-     'soft_token_types' =>  $token_setup->SoftTokenTypes,     
-     'default_authentication' => $token_setup->DefaultSoftTokenType,  
-     'updated' => $token_setup->SetupTimeUnixTime,))
-        ->condition('mail', $email, '=')
-        ->execute();
-
+        }
+        catch (SoapFault $e ){
+         form_set_error('error', t('Error'.$e.$client->__getLastRequest()));
+        
+        }
+        return $results->ValidateSoftTokenResult;
+        //return $this->options;
+   }
+   
       
-    drupal_goto($request->create_soft_token_setup_url(), array('external' => TRUE));
-     }
-     else {
-          form_set_error('error', t("Your MFA account doesn't exist. Please log in first to register."));
-     }
-     
-  }
-  else {
-         form_set_error('error', t('The current user or password is invalid.'));
-     }
-     
-     db_set_active();
-}
+function validate_soft_token_setup() {
 
-/*
- * Redirect users after logout
- * 
- */
-function eere_mfa_user_logout($account) {
-     $_GET['destination'] = 'mfa/login';
-}
+       $client = $this->_call();
+       
+        try {
+        $results = $client->ValidateSoftTokenSetup($this->options);
 
-/*
- * Redirect users after calcel
- * 
- */
-function eere_mfa_cancel() {
-     $_GET['destination'] = 'mfa/login';
-}
+        }
+        catch (SoapFault $e ){
+         form_set_error('error', t('Error'.$e.$client->__getLastRequest()));
+        
+        }
+        return $results->ValidateSoftTokenSetupResult;
+  
+   }
+   
+   
+function reset_soft_token_setup() {
 
-/**
- * Implements hook_menu_site_status_alter().
- */
-function eere_mfa_menu_site_status_alter(&$menu_site_status, $path) {
-  if (user_is_anonymous()) {
-    if ($path == 'user' || $path == 'user/login') {
-      drupal_goto('mfa/login');
-    }
-  }
+       $client = $this->_call();
+       
+        try {
+         $client->ResetSoftTokenSetup($this->options);
+
+        }
+        catch (SoapFault $e ){
+         form_set_error('error', t('Error'.$e.$client->__getLastRequest()));
+        
+        }
+  
+   }
 }
