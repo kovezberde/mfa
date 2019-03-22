@@ -24,7 +24,7 @@ class WsseAuthHeader extends SoapHeader {
 
 class MFAAuthentication {
 
-  public function __construct($uid, $user, $email, $param, $softToken) {
+  public function __construct($uid=null, $user=null, $email=null, $param=null, $softToken=null) {
         $arguments = func_get_args();
         $username = variable_get('username', NUL);
         $password = variable_get('password', NULL);
