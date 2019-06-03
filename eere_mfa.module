@@ -36,11 +36,7 @@ function eere_mfa_menu() {
 function eere_mfa_form($form, &$form_state) {                                                                                                                                                                                                
                                                                                                                                                                                                                                              
  $form['text'] = array (                                                                                                                                                                                                                     
-  '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%;">'                                                                                                                               
-     . '<br /><b>ATTENTION:</b> Starting 4/21/2018, this application users will be required to use Multi-Factor Authentication (MFA) to access this web application. '                                                                       
-     . ' Upon your first login, you will be redirected to a MFA setup/registration page where you will complete the process. '                                                                                                               
-     . '<br />After a successful token setup, you will be redirected back to login page and you will be able to use your MFA method on the next screen. '                                                                                    
-     . '<br />If you are having issues please contact the <a href="mailto:DL-EEREActioNetWebTeam@ee.doe.gov">administrator</a>.</div><br />',
+  '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%;">Some Text</div><br />',
  );
 
     
@@ -82,13 +78,7 @@ function eere_mfa_form($form, &$form_state) {
 
 function eere_mfa_token_form($form, &$form_state) {
   $form['text'] = array(
-   '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%">'
-      . 'This is a Department of Energy (DOE) computer system. DOE computer systems are provided for the processing of official U.S. government information only. '
-      . 'All data contained within DOE computer systems is owned by the DOE, and may be audited, intercepted, recorded, read, copied, or captured in any manner '
-      . 'and disclosed in any manner, by authorized personnel. THERE IS NO RIGHT OF PRIVACY IN THIS SYSTEM. '
-      . 'System personnel may disclose any potential evidence of crime found on DOE computer systems to appropriate authorities. '
-      . 'USE OF THIS SYSTEM BY ANY USER, AUTHORIZED OR UNAUTHORIZED, CONSTITUTES CONSENT TO THIS AUDITING, INTERCEPTION, RECORDING, READING, COPYING, CAPTURING, '
-      . 'and DISCLOSURE OF COMPUTER ACTIVITY.</div><br />',  
+   '#markup' => '<div style="background-color: #a6dc4833; padding: 15px; border: 1px solid #ddd; width: 62%">Some Text.</div><br />',  
   );  
     
  $form['token'] = array(
