@@ -1,1 +1,1 @@
-# eere_mfa
+Multifactor authentication (MFA) is a security system that requires more than one method of authentication from independent categories of credentials to verify the user's identity for a login or other transaction.
